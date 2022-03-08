@@ -24,7 +24,7 @@ interface IVotes {
     function getVotes(address account) external view returns (uint256);
 
     /**
-     * @dev Returns the current amount of votes that `account` has.
+     * @dev Gets the current checkpointed balance for `account`
      */
     function getBalance(address account) external view returns (uint256);
 
@@ -34,7 +34,7 @@ interface IVotes {
     function getPastVotes(address account, uint256 blockNumber) external view returns (uint256);
 
     /**
-     * @dev Returns the amount of votes that `account` had at the end of a past block (`blockNumber`).
+     * @dev Retrieve balance for `account` at the end of `blockNumber`.
      */
     function getPastBalance(address account, uint256 blockNumber) external view returns (uint256);
 

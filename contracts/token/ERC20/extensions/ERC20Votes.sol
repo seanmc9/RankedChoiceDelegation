@@ -68,7 +68,7 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     }
 
     /**
-     * @dev Gets the current balance for `account`
+     * @dev Gets the current checkpointed balance for `account`
      */
     function getBalance(address account) public view virtual override returns (uint256) {
         uint256 pos = _checkpoints[account].length;
