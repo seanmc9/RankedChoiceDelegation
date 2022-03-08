@@ -28,6 +28,7 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     struct Checkpoint {
         uint32 fromBlock;
         uint224 votes;
+        uint256 balance;
     }
 
     bytes32 private constant _DELEGATION_TYPEHASH =
@@ -67,6 +68,14 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     }
 
     /**
+     * @dev Gets the current balance for `account`
+     */
+    function getBalance(address account) public view virtual override returns (uint256) {
+        uint256 pos = _checkpoints[account].length;
+        return pos == 0 ? 0 : _checkpoints[account][pos - 1].balance;
+    }
+
+    /**
      * @dev Retrieve the number of votes for `account` at the end of `blockNumber`.
      *
      * Requirements:
@@ -76,6 +85,18 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     function getPastVotes(address account, uint256 blockNumber) public view virtual override returns (uint256) {
         require(blockNumber < block.number, "ERC20Votes: block not yet mined");
         return _checkpointsLookup(_checkpoints[account], blockNumber);
+    }
+
+    /**
+     * @dev Retrieve balance for `account` at the end of `blockNumber`.
+     *
+     * Requirements:
+     *
+     * - `blockNumber` must have been already mined
+     */
+    function getPastBalance(address account, uint256 blockNumber) public view virtual override returns (uint256) {
+        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
+        return _checkpointsBalanceLookup(_checkpoints[account], blockNumber);
     }
 
     /**
@@ -121,6 +142,26 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     }
 
     /**
+     * @dev Lookup a value in a list of (sorted) checkpoints.
+     */
+    function _checkpointsBalanceLookup(Checkpoint[] storage ckpts, uint256 blockNumber) private view returns (uint256) {
+        // Same as _checkpointsLookup, just returns the balance instead of votes. Just wanted to keep changes to 
+        // the OZ code as as conservative as possible.
+        uint256 high = ckpts.length;
+        uint256 low = 0;
+        while (low < high) {
+            uint256 mid = Math.average(low, high);
+            if (ckpts[mid].fromBlock > blockNumber) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        return high == 0 ? 0 : ckpts[high - 1].balance;
+    }
+
+    /**
      * @dev Delegate votes from the sender to `delegatee`.
      */
     function delegate(address delegatee) public virtual override {
@@ -163,7 +204,7 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         super._mint(account, amount);
         require(totalSupply() <= _maxSupply(), "ERC20Votes: total supply risks overflowing votes");
 
-        _writeCheckpoint(_totalSupplyCheckpoints, _add, amount);
+        _writeCheckpoint(account, _totalSupplyCheckpoints, _add, amount);
     }
 
     /**
@@ -172,7 +213,7 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     function _burn(address account, uint256 amount) internal virtual override {
         super._burn(account, amount);
 
-        _writeCheckpoint(_totalSupplyCheckpoints, _subtract, amount);
+        _writeCheckpoint(account, _totalSupplyCheckpoints, _subtract, amount);
     }
 
     /**
@@ -212,18 +253,19 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
     ) private {
         if (src != dst && amount > 0) {
             if (src != address(0)) {
-                (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(_checkpoints[src], _subtract, amount);
+                (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(src, _checkpoints[src], _subtract, amount);
                 emit DelegateVotesChanged(src, oldWeight, newWeight);
             }
 
             if (dst != address(0)) {
-                (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(_checkpoints[dst], _add, amount);
+                (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(dst, _checkpoints[dst], _add, amount);
                 emit DelegateVotesChanged(dst, oldWeight, newWeight);
             }
         }
     }
 
     function _writeCheckpoint(
+        address account,
         Checkpoint[] storage ckpts,
         function(uint256, uint256) view returns (uint256) op,
         uint256 delta
@@ -235,7 +277,7 @@ abstract contract ERC20Votes is IVotes, ERC20Permit {
         if (pos > 0 && ckpts[pos - 1].fromBlock == block.number) {
             ckpts[pos - 1].votes = SafeCast.toUint224(newWeight);
         } else {
-            ckpts.push(Checkpoint({fromBlock: SafeCast.toUint32(block.number), votes: SafeCast.toUint224(newWeight)}));
+            ckpts.push(Checkpoint({fromBlock: SafeCast.toUint32(block.number), votes: SafeCast.toUint224(newWeight), balance: balanceOf(account)}));
         }
     }
 
