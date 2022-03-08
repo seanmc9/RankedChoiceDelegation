@@ -4,7 +4,7 @@ Motivation: https://twitter.com/cult_leader_en/status/1500968744373211137?s=20&t
 
 Use: The commit I added adds balances the the checkpoints that are taken in ERC20Votes. A Dapp should be able to take in inputs regarding what ranking of delegations a user wants and simulate delegation given certain conditions using that information and the balance checkpoint information.
 
-Location: [ERC20Votes](https://github.com/seanmc9/RankedChoiceDelegation/blob/main/contracts/token/ERC20/extensions/ERC20Votes.sol) is where the logic diff is, [IVotes](https://github.com/seanmc9/RankedChoiceDelegation/blob/main/contracts/governance/utils/IVotes.sol) has changes just to update the interface with the new functions.
+Location: [ERC20Votes](https://github.com/seanmc9/RankedChoiceDelegation/blob/main/contracts/token/ERC20/extensions/ERC20Votes.sol) is where the logic diff is (primarily in [this commit](https://github.com/seanmc9/RankedChoiceDelegation/commit/e0112b89647d60e0215be4b1fcb8a247aa3c8908)), [IVotes](https://github.com/seanmc9/RankedChoiceDelegation/blob/main/contracts/governance/utils/IVotes.sol) has changes just to update the interface with the new functions.
 
 # <img src="logo.svg" alt="OpenZeppelin" height="40px">
 
